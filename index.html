@@ -644,47 +644,7 @@
         let userInventory = [];
         let selectedPayment = null;
 
-        // API base (change host/port if deploying elsewhere)
-        const API_BASE = (window.location.hostname === '1kotleta1.github.io')
-            ? 'https://main-html-5z31.onrender.com'
-            : 'http://localhost:8000';
-
-        function getInitData() {
-            return (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
-        }
-
-        async function apiFetch(path, options = {}) {
-            const headers = options.headers || {};
-            const initData = getInitData();
-            if (initData) {
-                headers['X-Telegram-Init-Data'] = initData;
-            }
-            const resp = await fetch(`${API_BASE}${path}`, {
-                method: options.method || 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...headers
-                },
-                body: options.body ? JSON.stringify(options.body) : undefined,
-            });
-            if (!resp.ok) throw new Error(`API ${path} failed: ${resp.status}`);
-            return await resp.json();
-        }
-
-        async function trySyncFromBackend() {
-            try {
-                const initData = getInitData();
-                if (!initData) return; // not inside Telegram
-                const bal = await apiFetch('/balances');
-                const inv = await apiFetch('/inventory');
-                userBalances = bal.balances || userBalances;
-                userInventory = inv.items || userInventory;
-                updateBalanceDisplay();
-                updateInventoryDisplay();
-            } catch (e) {
-                console.log('Backend sync skipped:', e.message);
-            }
-        }
+        // API removed: Mini App works fully offline in localStorage
 
         // Initialize app
         function initApp() {
@@ -698,8 +658,7 @@
                 window.Telegram.WebApp.expand();
             }
 
-            // Try to sync from backend if available
-            trySyncFromBackend();
+            // Backend sync disabled
         }
 
         // Load user data from localStorage
@@ -813,29 +772,13 @@
                 return;
             }
             
-            // Try backend add balance; fallback to local simulation
-            (async () => {
-                try {
-                    await apiFetch('/balance/add', { method: 'POST', body: { amount, currency: 'rub' } });
-                    const bal = await apiFetch('/balances');
-                    userBalances = bal.balances || userBalances;
-                    updateBalanceDisplay();
-                    saveUserData();
-                    closeAmountModal();
-                    alert(`✅ Баланс пополнен на ${amount} ₽!`);
-                    console.log(`Пополнение через ${selectedPayment}: ${amount} ₽ [backend]`);
-                } catch (e) {
-                    // Local fallback
-                    setTimeout(() => {
-                        userBalances.rub += amount;
-                        updateBalanceDisplay();
-                        saveUserData();
-                        closeAmountModal();
-                        alert(`✅ Баланс пополнен на ${amount} ₽!`);
-                        console.log(`Пополнение через ${selectedPayment}: ${amount} ₽ [local]`);
-                    }, 800);
-                }
-            })();
+            // Local update only
+            userBalances.rub += amount;
+            updateBalanceDisplay();
+            saveUserData();
+            closeAmountModal();
+            alert(`✅ Баланс пополнен на ${amount} ₽!`);
+            console.log(`Пополнение через ${selectedPayment}: ${amount} ₽ [local]`);
         }
 
         // Get payment method name
@@ -876,36 +819,20 @@
             }
             
             if (confirm(`Купить ${product.name} за ${price} ${currencySymbol}?`)) {
-                (async () => {
-                    try {
-                        await apiFetch('/shop/buy', { method: 'POST', body: { product_id: productId } });
-                        const bal = await apiFetch('/balances');
-                        const inv = await apiFetch('/inventory');
-                        userBalances = bal.balances || userBalances;
-                        userInventory = inv.items || userInventory;
-                        updateBalanceDisplay();
-                        updateInventoryDisplay();
-                        saveUserData();
-                        alert(`✅ ${product.name} куплен!`);
-                        console.log(`Куплен товар: ${product.name} [backend]`);
-                    } catch (e) {
-                        // Local fallback
-                        userBalances[currency] -= price;
-                        const inventoryItem = {
-                            id: productId + '_' + Date.now(),
-                            name: product.name,
-                            icon: product.icon,
-                            price: price,
-                            currency: currencySymbol
-                        };
-                        userInventory.push(inventoryItem);
-                        updateBalanceDisplay();
-                        updateInventoryDisplay();
-                        saveUserData();
-                        alert(`✅ ${product.name} куплен!`);
-                        console.log(`Куплен товар: ${product.name} [local]`);
-                    }
-                })();
+                userBalances[currency] -= price;
+                const inventoryItem = {
+                    id: productId + '_' + Date.now(),
+                    name: product.name,
+                    icon: product.icon,
+                    price: price,
+                    currency: currencySymbol
+                };
+                userInventory.push(inventoryItem);
+                updateBalanceDisplay();
+                updateInventoryDisplay();
+                saveUserData();
+                alert(`✅ ${product.name} куплен!`);
+                console.log(`Куплен товар: ${product.name} [local]`);
             }
         }
 
@@ -926,31 +853,14 @@
             if (!item) return;
             
             if (confirm(`Продать ${item.name} за ${item.price} ${item.currency}?`)) {
-                (async () => {
-                    try {
-                        // Find index by current list order
-                        const index = userInventory.findIndex(i => i.id === itemId);
-                        await apiFetch('/inventory/sell', { method: 'POST', body: { item_index: index } });
-                        const bal = await apiFetch('/balances');
-                        const inv = await apiFetch('/inventory');
-                        userBalances = bal.balances || userBalances;
-                        userInventory = inv.items || userInventory;
-                        updateBalanceDisplay();
-                        updateInventoryDisplay();
-                        saveUserData();
-                        alert(`✅ ${item.name} продан!`);
-                        console.log(`Продан товар: ${item.name} [backend]`);
-                    } catch (e) {
-                        const currency = item.currency === '₽' ? 'rub' : 'stars';
-                        userBalances[currency] += item.price;
-                        userInventory = userInventory.filter(i => i.id !== itemId);
-                        updateBalanceDisplay();
-                        updateInventoryDisplay();
-                        saveUserData();
-                        alert(`✅ ${item.name} продан за ${item.price} ${item.currency}!`);
-                        console.log(`Продан товар: ${item.name} [local]`);
-                    }
-                })();
+                const currency = item.currency === '₽' ? 'rub' : 'stars';
+                userBalances[currency] += item.price;
+                userInventory = userInventory.filter(i => i.id !== itemId);
+                updateBalanceDisplay();
+                updateInventoryDisplay();
+                saveUserData();
+                alert(`✅ ${item.name} продан за ${item.price} ${item.currency}!`);
+                console.log(`Продан товар: ${item.name} [local]`);
             }
         }
 
