@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сироп от кашля Bot - Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .balance-currency {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .menu-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+
+        .menu-item:active {
+            transform: translateY(-2px);
+        }
+
+        .menu-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .menu-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .menu-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin: 20px;
+            max-width: 350px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .payment-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .payment-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .payment-option.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .payment-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .payment-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .payment-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .amount-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .amount-input::placeholder {
+            color: #999;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .shop-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .shop-item-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .shop-item-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .shop-item-price {
+            font-size: 18px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .shop-item-desc {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .inventory-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .inventory-item-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .inventory-item-icon {
+            font-size: 32px;
+            margin-right: 15px;
+        }
+
+        .inventory-item-details h4 {
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .inventory-item-details p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .inventory-item-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ton-address {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 10px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .ton-amount {
+            margin: 20px 0;
+        }
+
+        .ton-amount h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .ton-check {
+            margin: 20px 0;
+        }
+
+        .ton-check h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .ton-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .ton-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .ton-input::placeholder {
+            color: #999;
+        }
+
+        .stars-payment-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border-radius: 15px;
+        }
+
+        .stars-payment-info h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .stars-payment-info p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .amount-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .amount-btn {
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .amount-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .amount-btn.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🥤 Сироп от кашля Bot</h1>
+            <p>Ваш персональный помощник</p>
+        </div>
+
+        <!-- Balance Card -->
+        <div class="card balance-card">
+            <div class="balance-amount" id="rubBalance">0.00</div>
+            <div class="balance-currency">₽ Рубли</div>
+            <div class="balance-amount" id="starsBalance">0</div>
+            <div class="balance-currency">⭐ Stars</div>
+        </div>
+
+        <!-- Main Menu -->
+        <div class="menu-grid" id="mainMenu">
+            <div class="menu-item" onclick="showPaymentModal()">
+                <span class="menu-icon">💳</span>
+                <div class="menu-title">Пополнить</div>
+                <div class="menu-desc">Рубли</div>
+            </div>
+            <div class="menu-item" onclick="showStarsPayment()">
+                <span class="menu-icon">⭐</span>
+                <div class="menu-title">Купить Stars</div>
+                <div class="menu-desc">Telegram Stars</div>
+            </div>
+            <div class="menu-item" onclick="showTonPayment()">
+                <span class="menu-icon">💰</span>
+                <div class="menu-title">Оплата TON</div>
+                <div class="menu-desc">Криптовалюта</div>
+            </div>
+            <div class="menu-item" onclick="showShop()">
+                <span class="menu-icon">🛒</span>
+                <div class="menu-title">Магазин</div>
+                <div class="menu-desc">Покупка товаров</div>
+            </div>
+            <div class="menu-item" onclick="showInventory()">
+                <span class="menu-icon">📦</span>
+                <div class="menu-title">Инвентарь</div>
+                <div class="menu-desc">Купленные товары</div>
+            </div>
+            <div class="menu-item" onclick="syncWithBot()">
+                <span class="menu-icon">🔄</span>
+                <div class="menu-title">Синхронизация</div>
+                <div class="menu-desc">С Telegram ботом</div>
+            </div>
+        </div>
+
+        <!-- Payment Modal -->
+        <div class="modal" id="paymentModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+                <h3>💳 Пополнение баланса</h3>
+                <p style="margin-bottom: 20px; color: #666;">Выберите способ оплаты:</p>
+                
+                <div class="payment-option" onclick="selectPayment('tinkoff')">
+                    <span class="payment-icon">🏦</span>
+                    <div class="payment-title">Тинькофф</div>
+                    <div class="payment-desc">Банковская карта</div>
+                </div>
+                
+                <div class="payment-option" onclick="selectPayment('sber')">
+                    <span class="payment-icon">🏛️</span>
+                    <div class="payment-title">Сбербанк</div>
+                    <div class="payment-desc">Банковская карта</div>
+                </div>
+                
+                <div class="payment-option" onclick="selectPayment('yoomoney')">
+                    <span class="payment-icon">💳</span>
+                    <div class="payment-title">ЮMoney</div>
+                    <div class="payment-desc">Электронный кошелек</div>
+                </div>
+                
+                <div class="payment-option" onclick="selectPayment('qiwi')">
+                    <span class="payment-icon">🧾</span>
+                    <div class="payment-title">QIWI</span>
+                    <div class="payment-desc">Электронный кошелек</div>
+                </div>
+                
+                <div class="payment-option" onclick="selectPayment('ton')">
+                    <span class="payment-icon">💰</span>
+                    <div class="payment-title">TON</div>
+                    <div class="payment-desc">Криптовалюта</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amount Input Modal -->
+        <div class="modal" id="amountModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeAmountModal()">&times;</button>
+                <h3>💰 Введите сумму</h3>
+                <p style="margin-bottom: 20px; color: #666;">Сумма пополнения в рублях:</p>
+                
+                <input type="number" class="amount-input" id="amountInput" placeholder="100" min="1" step="1">
+                
+                <button class="btn" onclick="processPayment()">Пополнить</button>
+                <button class="btn btn-secondary" onclick="closeAmountModal()">Отмена</button>
+            </div>
+        </div>
+
+        <!-- Shop Modal -->
+        <div class="modal" id="shopModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeShopModal()">&times;</button>
+                <h3>🛒 Магазин</h3>
+                <p style="margin-bottom: 20px; color: #666;">Выберите товар для покупки:</p>
+                
+                <div class="shop-item">
+                    <span class="shop-item-icon">🥔</span>
+                    <div class="shop-item-title">Картошка</div>
+                    <div class="shop-item-price">100 ₽</div>
+                    <div class="shop-item-desc">Свежая картошка с фермы</div>
+                    <button class="btn" onclick="buyProduct('potato', 100, 'rub')">Купить за 100 ₽</button>
+                </div>
+                
+                <div class="shop-item">
+                    <span class="shop-item-icon">🥤</span>
+                    <div class="shop-item-title">Сироп от кашля</div>
+                    <div class="shop-item-price">1 ⭐</div>
+                    <div class="shop-item-desc">Лечебный сироп от кашля</div>
+                    <button class="btn" onclick="buyProduct('syrup', 1, 'stars')">Купить за 1 ⭐</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Modal -->
+        <div class="modal" id="inventoryModal">
+            <div class="modal-content">
+                <button class="modal-close" onclick="closeInventoryModal()">&times;</button>
+                <h3>📦 Инвентарь</h3>
+                <p style="margin-bottom: 20px; color: #666;">Ваши купленные товары:</p>
+                
+                <div id="inventoryItems">
+                    <!-- Items will be loaded here -->
+                </div>
+                
+                <div id="emptyInventory" style="text-align: center; color: #666; padding: 40px 20px;">
+                    <span style="font-size: 48px; display: block; margin-bottom: 20px;">📭</span>
+                    <p>У вас пока нет купленных товаров</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stars Payment Section -->
+        <div class="hidden" id="starsPaymentSection">
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 20px;">⭐ Покупка Telegram Stars</h3>
+                
+                <div class="stars-payment-info">
+                    <h3>💡 Как это работает?</h3>
+                    <p>Telegram Stars - это внутренняя валюта Telegram для покупки премиум функций и поддержки создателей контента.</p>
+                </div>
+                
+                <div class="amount-buttons">
+                    <button class="amount-btn" onclick="buyStars(1)">1 ⭐</button>
+                    <button class="amount-btn" onclick="buyStars(5)">5 ⭐</button>
+                    <button class="amount-btn" onclick="buyStars(10)">10 ⭐</button>
+                    <button class="amount-btn" onclick="buyStars(20)">20 ⭐</button>
+                </div>
+                
+                <button class="btn btn-secondary" onclick="showMainMenu()">← Назад</button>
+            </div>
+        </div>
+
+        <!-- TON Payment Section -->
+        <div class="hidden" id="tonPaymentSection">
+            <div class="card">
+                <h3 style="text-align: center; margin-bottom: 20px;">💰 Пополнение через TON</h3>
+                
+                <div class="ton-amount">
+                    <h4>Выберите сумму пополнения:</h4>
+                    <div class="amount-buttons">
+                        <button class="amount-btn" onclick="setTonAmount(0.1)">0.1 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(0.5)">0.5 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(1)">1 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(5)">5 TON</button>
+                    </div>
+                </div>
+                
+                <div class="ton-address">
+                    <strong>Адрес кошелька:</strong><br>
+                    <span id="tonAddress">UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span>
+                </div>
+                
+                <button class="btn" onclick="copyTonAddress()">📋 Скопировать адрес</button>
+                
+                <div class="ton-check">
+                    <h4>Проверить транзакцию:</h4>
+                    <input type="text" class="ton-input" id="tonTxHash" placeholder="Введите хэш транзакции">
+                    <button class="btn" onclick="checkTonTransaction()">🔍 Проверить</button>
+                </div>
+                
+                <button class="btn btn-secondary" onclick="showMainMenu()">← Назад</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // User data storage
+        let userBalances = {
+            rub: 0,
+            stars: 0
+        };
+        
+        let userInventory = [];
+        let selectedPayment = null;
+
+        // Initialize app
+        function initApp() {
+            loadUserData();
+            updateBalanceDisplay();
+            updateInventoryDisplay();
+            
+            // Initialize Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+        }
+
+        // Load user data from localStorage
+        function loadUserData() {
+            const savedBalances = localStorage.getItem('userBalances');
+            const savedInventory = localStorage.getItem('userInventory');
+            
+            if (savedBalances) {
+                userBalances = JSON.parse(savedBalances);
+            }
+            
+            if (savedInventory) {
+                userInventory = JSON.parse(savedInventory);
+            }
+        }
+
+        // Save user data to localStorage
+        function saveUserData() {
+            localStorage.setItem('userBalances', JSON.stringify(userBalances));
+            localStorage.setItem('userInventory', JSON.stringify(userInventory));
+        }
+
+        // Update balance display
+        function updateBalanceDisplay() {
+            document.getElementById('rubBalance').textContent = userBalances.rub.toFixed(2);
+            document.getElementById('starsBalance').textContent = userBalances.rub;
+        }
+
+        // Update inventory display
+        function updateInventoryDisplay() {
+            const container = document.getElementById('inventoryItems');
+            const emptyMessage = document.getElementById('emptyInventory');
+            
+            if (userInventory.length === 0) {
+                container.innerHTML = '';
+                emptyMessage.style.display = 'block';
+                return;
+            }
+            
+            emptyMessage.style.display = 'none';
+            
+            container.innerHTML = userInventory.map(item => `
+                <div class="inventory-item">
+                    <div class="inventory-item-info">
+                        <span class="inventory-item-icon">${item.icon}</span>
+                        <div class="inventory-item-details">
+                            <h4>${item.name}</h4>
+                            <p>Куплено за: ${item.price} ${item.currency}</p>
+                        </div>
+                    </div>
+                    <div class="inventory-item-actions">
+                        <button class="btn btn-small" onclick="sellItem('${item.id}')">Продать</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show payment modal
+        function showPaymentModal() {
+            document.getElementById('paymentModal').classList.add('show');
+        }
+
+        // Close payment modal
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.remove('show');
+            selectedPayment = null;
+        }
+
+        // Select payment method
+        function selectPayment(method) {
+            selectedPayment = method;
+            
+            // Remove previous selections
+            document.querySelectorAll('.payment-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select current option
+            event.target.closest('.payment-option').classList.add('selected');
+            
+            // Show amount input
+            setTimeout(() => {
+                closePaymentModal();
+                showAmountModal();
+            }, 300);
+        }
+
+        // Show amount modal
+        function showAmountModal() {
+            document.getElementById('amountModal').classList.add('show');
+            document.getElementById('amountInput').focus();
+        }
+
+        // Close amount modal
+        function closeAmountModal() {
+            document.getElementById('amountModal').classList.remove('show');
+            document.getElementById('amountInput').value = '';
+        }
+
+        // Process payment
+        function processPayment() {
+            const amount = parseFloat(document.getElementById('amountInput').value);
+            
+            if (!amount || amount <= 0) {
+                alert('❌ Введите корректную сумму');
+                return;
+            }
+            
+            if (!selectedPayment) {
+                alert('❌ Выберите способ оплаты');
+                return;
+            }
+            
+            // Simulate payment processing
+            if (confirm(`Подтвердить пополнение на ${amount} ₽ через ${getPaymentName(selectedPayment)}?`)) {
+                setTimeout(() => {
+                    userBalances.rub += amount;
+                    updateBalanceDisplay();
+                    saveUserData();
+                    
+                    closeAmountModal();
+                    alert(`✅ Баланс пополнен на ${amount} ₽!`);
+                    
+                    console.log(`Пополнение через ${selectedPayment}: ${amount} ₽`);
+                }, 2000);
+            }
+        }
+
+        // Get payment method name
+        function getPaymentName(method) {
+            const names = {
+                'tinkoff': 'Тинькофф',
+                'sber': 'Сбербанк',
+                'yoomoney': 'ЮMoney',
+                'qiwi': 'QIWI',
+                'ton': 'TON'
+            };
+            return names[method] || method;
+        }
+
+        // Show shop
+        function showShop() {
+            document.getElementById('shopModal').classList.add('show');
+        }
+
+        // Close shop modal
+        function closeShopModal() {
+            document.getElementById('shopModal').classList.remove('show');
+        }
+
+        // Buy product
+        function buyProduct(productId, price, currency) {
+            const products = {
+                'potato': { name: 'Картошка', icon: '🥔' },
+                'syrup': { name: 'Сироп от кашля', icon: '🥤' }
+            };
+            
+            const product = products[productId];
+            const currencySymbol = currency === 'rub' ? '₽' : '⭐';
+            
+            if (userBalances[currency] < price) {
+                alert(`❌ Недостаточно ${currency === 'rub' ? 'рублей' : 'Stars'}`);
+                return;
+            }
+            
+            if (confirm(`Купить ${product.name} за ${price} ${currencySymbol}?`)) {
+                userBalances[currency] -= price;
+                
+                const inventoryItem = {
+                    id: productId + '_' + Date.now(),
+                    name: product.name,
+                    icon: product.icon,
+                    price: price,
+                    currency: currencySymbol
+                };
+                
+                userInventory.push(inventoryItem);
+                
+                updateBalanceDisplay();
+                updateInventoryDisplay();
+                saveUserData();
+                
+                alert(`✅ ${product.name} куплен!`);
+                console.log(`Куплен товар: ${product.name} за ${price} ${currencySymbol}`);
+            }
+        }
+
+        // Show inventory
+        function showInventory() {
+            document.getElementById('inventoryModal').classList.add('show');
+        }
+
+        // Close inventory modal
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').classList.remove('show');
+        }
+
+        // Sell item
+        function sellItem(itemId) {
+            const item = userInventory.find(item => item.id === itemId);
+            
+            if (!item) return;
+            
+            if (confirm(`Продать ${item.name} за ${item.price} ${item.currency}?`)) {
+                const currency = item.currency === '₽' ? 'rub' : 'stars';
+                userBalances[currency] += item.price;
+                
+                userInventory = userInventory.filter(item => item.id !== itemId);
+                
+                updateBalanceDisplay();
+                updateInventoryDisplay();
+                saveUserData();
+                
+                alert(`✅ ${item.name} продан за ${item.price} ${item.currency}!`);
+                console.log(`Продан товар: ${item.name} за ${item.price} ${item.currency}`);
+            }
+        }
+
+        // Show Stars payment
+        function showStarsPayment() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('starsPaymentSection').classList.remove('hidden');
+            document.getElementById('starsPaymentSection').classList.add('fade-in');
+        }
+
+        // Show TON payment
+        function showTonPayment() {
+            document.getElementById('mainMenu').classList.add('hidden');
+            document.getElementById('tonPaymentSection').classList.remove('hidden');
+            document.getElementById('tonPaymentSection').classList.add('fade-in');
+        }
+
+        // Buy Stars - работает только локально
+        function buyStars(amount) {
+            if (confirm(`Купить ${amount} Stars за ${amount} рублей?`)) {
+                // В реальном Mini App здесь будет интеграция с Telegram Stars API
+                // Пока что симулируем покупку локально
+                alert(`✅ Покупка ${amount} Stars успешно обработана!`);
+                userBalances.stars += amount;
+                updateBalanceDisplay();
+                saveUserData();
+                showMainMenu();
+                
+                console.log(`Куплено ${amount} Stars. Баланс: ${userBalances.stars} Stars`);
+            }
+        }
+
+        // Set TON amount
+        function setTonAmount(amount) {
+            // Обновляем UI
+            document.querySelectorAll('.ton-amount .amount-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            // Показываем информацию о сумме
+            alert(`Выбрана сумма: ${amount} TON\n\nОтправьте ${amount} TON на указанный адрес для пополнения баланса.`);
+        }
+
+        // Copy TON address
+        function copyTonAddress() {
+            const address = document.getElementById('tonAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                alert('✅ Адрес скопирован в буфер обмена!');
+            }).catch(() => {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = address;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ Адрес скопирован в буфер обмена!');
+            });
+        }
+
+        // Check TON transaction - работает только локально
+        function checkTonTransaction() {
+            const txHash = document.getElementById('tonTxHash').value.trim();
+            
+            if (!txHash) {
+                alert('❌ Введите хэш транзакции');
+                return;
+            }
+            
+            if (txHash.length < 10) {
+                alert('❌ Хэш транзакции слишком короткий');
+                return;
+            }
+            
+            // В реальном Mini App здесь будет интеграция с TON API
+            // Пока что симулируем проверку локально
+            if (confirm(`Проверить транзакцию: ${txHash}?`)) {
+                setTimeout(() => {
+                    if (Math.random() > 0.3) {
+                        alert('✅ Транзакция найдена! Баланс пополнен.');
+                        const amount = Math.random() * 5 + 0.1;
+                        userBalances.rub += amount * 100;
+                        updateBalanceDisplay();
+                        saveUserData();
+                        document.getElementById('tonTxHash').value = '';
+                        
+                        console.log(`TON транзакция ${txHash} подтверждена. Пополнено: ${amount * 100} ₽`);
+                    } else {
+                        alert('❌ Транзакция не найдена или еще не подтверждена');
+                    }
+                }, 2000);
+            }
+        }
+
+        // Show main menu
+        function showMainMenu() {
+            document.getElementById('starsPaymentSection').classList.add('hidden');
+            document.getElementById('tonPaymentSection').classList.add('hidden');
+            document.getElementById('mainMenu').classList.remove('hidden');
+        }
+
+        // Sync with bot (отключено)
+        function syncWithBot() {
+            alert('🔄 Синхронизация с Telegram ботом отключена.\n\nДанные сохраняются локально в вашем браузере.');
+            console.log('Синхронизация отключена - данные хранятся локально');
+        }
+
+        // Initialize app when loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
