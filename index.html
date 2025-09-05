@@ -667,11 +667,24 @@
             const savedInventory = localStorage.getItem('userInventory');
             
             if (savedBalances) {
-                userBalances = JSON.parse(savedBalances);
+                try {
+                    const parsed = JSON.parse(savedBalances);
+                    userBalances = {
+                        rub: Number(parsed.rub) || 0,
+                        stars: Number(parsed.stars) || 0,
+                    };
+                } catch (_) {
+                    userBalances = { rub: 0, stars: 0 };
+                }
             }
             
             if (savedInventory) {
-                userInventory = JSON.parse(savedInventory);
+                try {
+                    const parsedInv = JSON.parse(savedInventory);
+                    userInventory = Array.isArray(parsedInv) ? parsedInv : [];
+                } catch (_) {
+                    userInventory = [];
+                }
             }
         }
 
@@ -824,13 +837,15 @@
                     id: productId + '_' + Date.now(),
                     name: product.name,
                     icon: product.icon,
-                    price: price,
-                    currency: currencySymbol
+                    price: Number(price),
+                    currency: currencySymbol,
+                    currencyCode: currency
                 };
                 userInventory.push(inventoryItem);
                 updateBalanceDisplay();
                 updateInventoryDisplay();
                 saveUserData();
+                closeShopModal();
                 alert(`✅ ${product.name} куплен!`);
                 console.log(`Куплен товар: ${product.name} [local]`);
             }
@@ -853,8 +868,8 @@
             if (!item) return;
             
             if (confirm(`Продать ${item.name} за ${item.price} ${item.currency}?`)) {
-                const currency = item.currency === '₽' ? 'rub' : 'stars';
-                userBalances[currency] += item.price;
+                const currency = item.currencyCode ? item.currencyCode : (item.currency === '₽' ? 'rub' : 'stars');
+                userBalances[currency] += Number(item.price) || 0;
                 userInventory = userInventory.filter(i => i.id !== itemId);
                 updateBalanceDisplay();
                 updateInventoryDisplay();
