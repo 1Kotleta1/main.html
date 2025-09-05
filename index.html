@@ -491,31 +491,31 @@
                 <h3>💳 Пополнение баланса</h3>
                 <p style="margin-bottom: 20px; color: #666;">Выберите способ оплаты:</p>
                 
-                <div class="payment-option" onclick="selectPayment('tinkoff')">
+                <div class="payment-option" onclick="selectPayment(event, 'tinkoff')">
                     <span class="payment-icon">🏦</span>
                     <div class="payment-title">Тинькофф</div>
                     <div class="payment-desc">Банковская карта</div>
                 </div>
                 
-                <div class="payment-option" onclick="selectPayment('sber')">
+                <div class="payment-option" onclick="selectPayment(event, 'sber')">
                     <span class="payment-icon">🏛️</span>
                     <div class="payment-title">Сбербанк</div>
                     <div class="payment-desc">Банковская карта</div>
                 </div>
                 
-                <div class="payment-option" onclick="selectPayment('yoomoney')">
+                <div class="payment-option" onclick="selectPayment(event, 'yoomoney')">
                     <span class="payment-icon">💳</span>
                     <div class="payment-title">ЮMoney</div>
                     <div class="payment-desc">Электронный кошелек</div>
                 </div>
                 
-                <div class="payment-option" onclick="selectPayment('qiwi')">
+                <div class="payment-option" onclick="selectPayment(event, 'qiwi')">
                     <span class="payment-icon">🧾</span>
-                    <div class="payment-title">QIWI</span>
+                    <div class="payment-title">QIWI</div>
                     <div class="payment-desc">Электронный кошелек</div>
                 </div>
                 
-                <div class="payment-option" onclick="selectPayment('ton')">
+                <div class="payment-option" onclick="selectPayment(event, 'ton')">
                     <span class="payment-icon">💰</span>
                     <div class="payment-title">TON</div>
                     <div class="payment-desc">Криптовалюта</div>
@@ -609,10 +609,10 @@
                 <div class="ton-amount">
                     <h4>Выберите сумму пополнения:</h4>
                     <div class="amount-buttons">
-                        <button class="amount-btn" onclick="setTonAmount(0.1)">0.1 TON</button>
-                        <button class="amount-btn" onclick="setTonAmount(0.5)">0.5 TON</button>
-                        <button class="amount-btn" onclick="setTonAmount(1)">1 TON</button>
-                        <button class="amount-btn" onclick="setTonAmount(5)">5 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(event, 0.1)">0.1 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(event, 0.5)">0.5 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(event, 1)">1 TON</button>
+                        <button class="amount-btn" onclick="setTonAmount(event, 5)">5 TON</button>
                     </div>
                 </div>
                 
@@ -680,7 +680,7 @@
         // Update balance display
         function updateBalanceDisplay() {
             document.getElementById('rubBalance').textContent = userBalances.rub.toFixed(2);
-            document.getElementById('starsBalance').textContent = userBalances.rub;
+            document.getElementById('starsBalance').textContent = userBalances.stars;
         }
 
         // Update inventory display
@@ -724,7 +724,7 @@
         }
 
         // Select payment method
-        function selectPayment(method) {
+        function selectPayment(evt, method) {
             selectedPayment = method;
             
             // Remove previous selections
@@ -733,7 +733,7 @@
             });
             
             // Select current option
-            event.target.closest('.payment-option').classList.add('selected');
+            evt.target.closest('.payment-option').classList.add('selected');
             
             // Show amount input
             setTimeout(() => {
@@ -903,12 +903,12 @@
         }
 
         // Set TON amount
-        function setTonAmount(amount) {
+        function setTonAmount(evt, amount) {
             // Обновляем UI
             document.querySelectorAll('.ton-amount .amount-btn').forEach(btn => {
                 btn.classList.remove('selected');
             });
-            event.target.classList.add('selected');
+            evt.target.classList.add('selected');
             
             // Показываем информацию о сумме
             alert(`Выбрана сумма: ${amount} TON\n\nОтправьте ${amount} TON на указанный адрес для пополнения баланса.`);
